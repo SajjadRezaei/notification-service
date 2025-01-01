@@ -10,8 +10,13 @@ type RabbitMQConfig struct {
 	Exchange      string
 	RoutingKeyMap map[string]string
 }
+
+type ServerConfig struct {
+	Port string
+}
 type Config struct {
 	RabbitMQ RabbitMQConfig
+	Server   ServerConfig
 }
 
 func LoadConfig() *Config {
@@ -26,6 +31,9 @@ func LoadConfig() *Config {
 				"user_signup":   "user.registered",
 				"order_created": "order.created",
 			},
+		},
+		Server: ServerConfig{
+			Port: getEnv("APP_PORT", "8080"),
 		},
 	}
 }

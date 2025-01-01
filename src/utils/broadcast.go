@@ -1,15 +1,15 @@
 package utils
 
 import (
-	"github.com/gorilla/websocket"
 	"log"
 	"sync"
+
+	"github.com/gorilla/websocket"
 )
 
 var (
-	clients   = make(map[*websocket.Conn]map[string]bool)
-	broadcast = make(chan []byte)
-	mu        = new(sync.Mutex)
+	clients = make(map[*websocket.Conn]map[string]bool)
+	mu      = new(sync.Mutex)
 )
 
 type BroadcastRequest struct {
@@ -63,21 +63,5 @@ func BroadcastMessage(eventType string, message []byte) {
 				UnRegisterClient(client)
 			}
 		}
-	}
-
-	broadcast <- message
-}
-
-func HandleBroadcast() {
-	for {
-		msg := <-broadcast
-		mu.Lock()
-		for client := range clients {
-			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
-				log.Printf("Failed to broadcast message to clients: %v\n", err)
-				UnRegisterClient(client)
-			}
-		}
-		mu.Unlock()
 	}
 }

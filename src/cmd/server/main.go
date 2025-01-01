@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
+	"notification-service/src/consumers"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,21 +30,17 @@ func main() {
 	defer conn.Close()
 	defer ch.Close()
 
-	// Monitor channel closure and recreate if necessary
+	// monitor channel closure and recreate if necessary
 	ch = reopenChanelIfNecessary(ch, conn)
 
-	//go utils.HandleBroadcast()
-
+	// init server
 	initServer(cfg, ch, ctx)
 
-	// Run the consumer in a goroutine
-	//go func() {
-	//	log.Println("Starting message consumer...")
-	//	err := consumers.ConsumeOrderCreated(ch, ctx)
-	//	if err != nil {
-	//		log.Printf("Error consuming messages: %v", err)
-	//	}
-	//}()
+	//Run the consumer in a goroutine
+	go func() {
+		log.Println("Starting message consumer...")
+		consumers.ConsumeUserRegistered(ch, ctx)
+	}()
 
 	// Handle OS signals for graceful shutdown
 	signalChan := make(chan os.Signal, 1)
@@ -58,7 +56,7 @@ func main() {
 }
 
 func initServer(cfg *config.Config, ch *amqp.Channel, ctx context.Context) {
-	//for simulate notify event for example (user_signup, order_created,and ....))
+	//for simulate notify event for example (user_signup, order_created,and ....)
 	http.HandleFunc("/event", func(w http.ResponseWriter, r *http.Request) {
 		handlers.EventHandler(cfg, w, r, ch)
 	})
@@ -66,10 +64,10 @@ func initServer(cfg *config.Config, ch *amqp.Channel, ctx context.Context) {
 	// for web socket
 	http.HandleFunc("/ws", handlers.WSHandler)
 
-	server := &http.Server{Addr: ":8080"}
+	server := &http.Server{Addr: fmt.Sprintf(":%s", cfg.Server.Port)}
 
 	go func() {
-		log.Println("Server started on :8080")
+		log.Printf("Server started on :%s", cfg.Server.Port)
 		if err := server.ListenAndServe(); err != nil {
 			ctx.Done()
 			log.Fatalf("Server failed: %v", err)

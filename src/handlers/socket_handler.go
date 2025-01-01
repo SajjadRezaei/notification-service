@@ -1,10 +1,12 @@
 package handlers
 
 import (
-	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+
 	"notification-service/src/utils"
+
+	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{
@@ -29,7 +31,7 @@ func WSHandler(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		var req SubscribeRequest
-		err := conn.ReadJSON(&req)
+		err = conn.ReadJSON(&req)
 		if err != nil {
 			log.Println("Failed to read message from client", err)
 			utils.UnRegisterClient(conn)
@@ -43,7 +45,7 @@ func WSHandler(w http.ResponseWriter, r *http.Request) {
 			utils.UnSubscribeFromEvent(conn, req.EventType)
 		default:
 			log.Printf("Invalid action: %s\n", req.Action)
-			err := conn.WriteMessage(websocket.TextMessage, []byte("Invalid action: must be 'subscribe' or 'unsubscribe'"))
+			err = conn.WriteMessage(websocket.TextMessage, []byte("Invalid action: must be 'subscribe' or 'unsubscribe'"))
 			if err != nil {
 				log.Printf("Failed to send error message to client: %v\n", err)
 			}

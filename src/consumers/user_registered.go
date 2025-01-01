@@ -9,7 +9,7 @@ import (
 
 func ConsumeUserRegistered(ch *amqp.Channel, ctx context.Context) {
 	msgs, err := ch.Consume(
-		"user_signup,",
+		"user_signup",
 		"",
 		true,
 		false,
