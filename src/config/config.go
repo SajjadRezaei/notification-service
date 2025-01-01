@@ -1,16 +1,32 @@
 package config
 
-import (
-	"os"
-)
+import "os"
 
+type RabbitMQConfig struct {
+	Host          string
+	Port          string
+	Username      string
+	Password      string
+	Exchange      string
+	RoutingKeyMap map[string]string
+}
 type Config struct {
-	RabbitMQURL string
+	RabbitMQ RabbitMQConfig
 }
 
 func LoadConfig() *Config {
 	return &Config{
-		RabbitMQURL: getEnv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
+		RabbitMQ: RabbitMQConfig{
+			Host:     getEnv("RABBITMQ_HOST", "localhost"),
+			Port:     getEnv("RABBITMQ_PORT", "5672"),
+			Username: getEnv("RABBITMQ_USERNAME", "guest"),
+			Password: getEnv("RABBITMQ_PASSWORD", "guest"),
+			Exchange: getEnv("RABBITMQ_EXCHANGE", "event_exchange"),
+			RoutingKeyMap: map[string]string{ //todo: refactor this code
+				"user_signup":   "user.registered",
+				"order_created": "order.created",
+			},
+		},
 	}
 }
 

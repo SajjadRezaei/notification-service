@@ -41,7 +41,12 @@ func WSHandler(w http.ResponseWriter, r *http.Request) {
 			utils.SubscribeToEvent(conn, req.EventType)
 		case "unsubscribe":
 			utils.UnSubscribeFromEvent(conn, req.EventType)
+		default:
+			log.Printf("Invalid action: %s\n", req.Action)
+			err := conn.WriteMessage(websocket.TextMessage, []byte("Invalid action: must be 'subscribe' or 'unsubscribe'"))
+			if err != nil {
+				log.Printf("Failed to send error message to client: %v\n", err)
+			}
 		}
-
 	}
 }

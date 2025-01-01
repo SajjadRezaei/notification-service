@@ -1,12 +1,13 @@
 package consumers
 
 import (
+	"context"
 	"github.com/streadway/amqp"
 	"log"
 	"notification-service/src/utils"
 )
 
-func ConsumeUserRegistered(ch *amqp.Channel) {
+func ConsumeUserRegistered(ch *amqp.Channel, ctx context.Context) {
 	msgs, err := ch.Consume(
 		"user_signup,",
 		"",
@@ -23,6 +24,6 @@ func ConsumeUserRegistered(ch *amqp.Channel) {
 
 	for msg := range msgs {
 		log.Printf("user register event: %s", msg.Body)
-		utils.BroadcastMessage("", msg.Body)
+		utils.BroadcastMessage("user_signup", msg.Body)
 	}
 }

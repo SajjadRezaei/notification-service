@@ -1,10 +1,13 @@
 package services
 
-import "github.com/streadway/amqp"
+import (
+	"github.com/streadway/amqp"
+	"log"
+)
 
 func PublishEvent(ch *amqp.Channel, routingKey string, body []byte) error {
-	return ch.Publish(
-		"events_exchange",
+	err := ch.Publish(
+		"event_exchange",
 		routingKey,
 		false,
 		false,
@@ -13,4 +16,10 @@ func PublishEvent(ch *amqp.Channel, routingKey string, body []byte) error {
 			Body:        body,
 		},
 	)
+
+	if err != nil {
+		log.Println("Failed to publish a message:", err)
+	}
+
+	return err
 }

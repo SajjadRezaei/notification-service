@@ -10,19 +10,14 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-    healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-
   notification-service:
     build:
       context: .
     container_name: notification-service
     ports:
       - "8080:8080" # Expose the notification service on port 8080
-    environment:
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/ # RabbitMQ connection URL
     depends_on:
       - rabbitmq # Ensure RabbitMQ starts before the notification service
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672

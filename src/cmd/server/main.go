@@ -1,23 +1,24 @@
 package main
 
 import (
+	"context"
+	"github.com/streadway/amqp"
 	"log"
 	"net/http"
-	"notification-service/src/consumers"
+	"notification-service/src/config"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"notification-service/src/config"
+	//"notification-service/src/config"
 	"notification-service/src/handlers"
 	"notification-service/src/infra/rabbitmq"
-	"notification-service/src/utils"
 )
 
 func main() {
 	cfg := config.LoadConfig()
-
-	conn, ch, err := rabbitmq.SetupRabbitMq(cfg)
+	ctx, cancel := context.WithCancel(context.Background())
+	conn, ch, err := rabbitmq.SetupRabbitMq(&cfg.RabbitMQ)
 	if err != nil {
 		log.Fatalf("failed to setup rabbitmq: %s", err)
 	}
@@ -25,14 +26,35 @@ func main() {
 	defer conn.Close()
 	defer ch.Close()
 
-	go consumers.ConsumeOrderCreated(ch)
-	go consumers.ConsumeOrderCreated(ch)
+	//go utils.HandleBroadcast()
 
-	go utils.HandleBroadcast()
+	initServer(cfg, ch, ctx)
 
-	//for produce message (for simulate)
+	// Run the consumer in a goroutine
+	//go func() {
+	//	log.Println("Starting message consumer...")
+	//	err := consumers.ConsumeOrderCreated(ch, ctx)
+	//	if err != nil {
+	//		log.Printf("Error consuming messages: %v", err)
+	//	}
+	//}()
+
+	// Handle OS signals for graceful shutdown
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-signalChan
+		log.Println("Received shutdown signal, canceling context...")
+		cancel()
+	}()
+	<-ctx.Done()
+	//
+}
+
+func initServer(cfg *config.Config, ch *amqp.Channel, ctx context.Context) {
 	http.HandleFunc("/event", func(w http.ResponseWriter, r *http.Request) {
-		handlers.EventHandler(w, r, ch)
+		handlers.EventHandler(cfg, w, r, ch)
 	})
 
 	// for web socket
@@ -43,15 +65,12 @@ func main() {
 	go func() {
 		log.Println("Server started on :8080")
 		if err := server.ListenAndServe(); err != nil {
+			ctx.Done()
 			log.Fatalf("Server failed: %v", err)
 		}
 	}()
+}
 
-	// Graceful shutdown
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-	<-stop
+func getConfig() {
 
-	log.Println("Shutting down server...")
-	server.Close()
 }
