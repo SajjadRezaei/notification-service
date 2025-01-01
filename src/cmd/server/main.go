@@ -16,8 +16,10 @@ import (
 )
 
 func main() {
+
 	cfg := config.LoadConfig()
 	ctx, cancel := context.WithCancel(context.Background())
+
 	conn, ch, err := rabbitmq.SetupRabbitMq(&cfg.RabbitMQ)
 	if err != nil {
 		log.Fatalf("failed to setup rabbitmq: %s", err)
@@ -25,6 +27,9 @@ func main() {
 
 	defer conn.Close()
 	defer ch.Close()
+
+	// Monitor channel closure and recreate if necessary
+	ch = reopenChanelIfNecessary(ch, conn)
 
 	//go utils.HandleBroadcast()
 
@@ -70,4 +75,21 @@ func initServer(cfg *config.Config, ch *amqp.Channel, ctx context.Context) {
 			log.Fatalf("Server failed: %v", err)
 		}
 	}()
+}
+
+func reopenChanelIfNecessary(ch *amqp.Channel, conn *amqp.Connection) *amqp.Channel {
+
+	go func() {
+		errChan := ch.NotifyClose(make(chan *amqp.Error))
+		for err := range errChan {
+			log.Printf("RabbitMQ channel closed: %v", err)
+			newCh, err := rabbitmq.OpenChannel(conn)
+			if err != nil {
+				log.Fatalf("Failed to recreate RabbitMQ channel: %v", err)
+			}
+			ch = newCh
+		}
+	}()
+
+	return ch
 }

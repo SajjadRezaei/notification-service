@@ -61,6 +61,18 @@ func SetupRabbitMq(cfg *config.RabbitMQConfig) (*amqp.Connection, *amqp.Channel,
 	return conn, ch, nil
 }
 
+func OpenChannel(conn *amqp.Connection) (*amqp.Channel, error) {
+	for i := 0; i < 5; i++ {
+		ch, err := conn.Channel()
+		if err == nil {
+			return ch, nil
+		}
+		log.Printf("Failed to open channel (attempt %d): %s", i+1, err)
+		time.Sleep(2 * time.Second)
+	}
+	return nil, fmt.Errorf("failed to open channel after retries")
+}
+
 func bindQueuesToExchange(cfg *config.RabbitMQConfig, err error, ch *amqp.Channel) error {
 	for queue, routingKey := range cfg.RoutingKeyMap {
 		_, err = ch.QueueDeclare(
