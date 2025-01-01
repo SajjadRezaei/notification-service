@@ -26,7 +26,7 @@ func EventHandler(cfg *config.Config, w http.ResponseWriter, r *http.Request, ch
 		return
 	}
 
-	if err := services.PublishEvent(ch, cfg.RabbitMQ.RoutingKeyMap[req.EventType], req.Payload); err != nil {
+	if err := services.PublishEvent(ch, cfg.RabbitMQ.Exchange, cfg.RabbitMQ.RoutingKeyMap[req.EventType], req.Payload); err != nil {
 		http.Error(w, "Failed to publish event", http.StatusInternalServerError)
 		return
 	}

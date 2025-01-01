@@ -5,9 +5,9 @@ import (
 	"log"
 )
 
-func PublishEvent(ch *amqp.Channel, routingKey string, body []byte) error {
+func PublishEvent(ch *amqp.Channel, exchange string, routingKey string, body []byte) error {
 	err := ch.Publish(
-		"event_exchange",
+		exchange,
 		routingKey,
 		false,
 		false,

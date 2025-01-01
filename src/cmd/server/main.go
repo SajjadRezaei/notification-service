@@ -2,15 +2,15 @@ package main
 
 import (
 	"context"
-	"github.com/streadway/amqp"
 	"log"
 	"net/http"
-	"notification-service/src/config"
 	"os"
 	"os/signal"
 	"syscall"
 
-	//"notification-service/src/config"
+	"github.com/streadway/amqp"
+
+	"notification-service/src/config"
 	"notification-service/src/handlers"
 	"notification-service/src/infra/rabbitmq"
 )
@@ -53,6 +53,7 @@ func main() {
 }
 
 func initServer(cfg *config.Config, ch *amqp.Channel, ctx context.Context) {
+	//for simulate notify event for example (user_signup, order_created,and ....))
 	http.HandleFunc("/event", func(w http.ResponseWriter, r *http.Request) {
 		handlers.EventHandler(cfg, w, r, ch)
 	})
@@ -69,8 +70,4 @@ func initServer(cfg *config.Config, ch *amqp.Channel, ctx context.Context) {
 			log.Fatalf("Server failed: %v", err)
 		}
 	}()
-}
-
-func getConfig() {
-
 }
