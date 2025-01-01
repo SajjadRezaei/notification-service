@@ -32,8 +32,8 @@ func ConsumeUserRegistered(ch *amqp.Channel, ctx context.Context) {
 				log.Printf("Failed to acknowledge message: %v", err)
 			}
 		} else {
-			// Reject the message and requeue it for another attempt
-			if err = msg.Nack(false, true); err != nil {
+
+			if err = msg.Nack(false, false); err != nil {
 				log.Printf("Failed to reject message: %v", err)
 			}
 		}
