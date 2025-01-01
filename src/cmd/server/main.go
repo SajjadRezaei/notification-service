@@ -30,19 +30,19 @@ func main() {
 	defer conn.Close()
 	defer ch.Close()
 
-	// monitor channel closure and recreate if necessary
 	reopenChanelIfNecessary(ch, conn)
 
 	// init server
 	initServer(cfg, ch, ctx)
 
 	//Run the consumer in a goroutine
-	go func() {
-		log.Println("Starting message consumer...")
-		consumers.ConsumeUserRegistered(ch, ctx)
-	}()
+	consumers.ConsumeMessage(&cfg.RabbitMQ, ch, ctx)
 
-	// Handle OS signals for graceful shutdown
+	waitForShutdownSignal(cancel, ctx)
+}
+
+// waitForShutdownSignal for handle Graceful Shutdown
+func waitForShutdownSignal(cancel context.CancelFunc, ctx context.Context) {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
 
@@ -52,9 +52,9 @@ func main() {
 		cancel()
 	}()
 	<-ctx.Done()
-	//
 }
 
+// initServer initialize http server for get event and handle socket web server
 func initServer(cfg *config.Config, ch *amqp.Channel, ctx context.Context) {
 	//for simulate notify event for example (user_signup, order_created,and ....)
 	http.HandleFunc("/event", func(w http.ResponseWriter, r *http.Request) {
@@ -75,6 +75,7 @@ func initServer(cfg *config.Config, ch *amqp.Channel, ctx context.Context) {
 	}()
 }
 
+// reopenChanelIfNecessary monitor channel closure and recreate if necessary
 func reopenChanelIfNecessary(ch *amqp.Channel, conn *amqp.Connection) {
 	go func() {
 		errChan := ch.NotifyClose(make(chan *amqp.Error))

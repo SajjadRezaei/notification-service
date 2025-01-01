@@ -4,27 +4,52 @@ import (
 	"context"
 	"log"
 
+	"notification-service/src/config"
 	"notification-service/src/utils"
 
 	"github.com/streadway/amqp"
 )
 
-func ConsumeUserRegistered(ch *amqp.Channel, ctx context.Context) {
-	msgs, err := ch.Consume(
-		"user_signup",
-		"",
-		false,
-		false,
-		false,
-		false,
-		nil,
-	)
+// ConsumeMessage dynamically consumes messages for all queues in the RoutingKeyMap
+func ConsumeMessage(cfg *config.RabbitMQConfig, ch *amqp.Channel, ctx context.Context) {
+	for topic, routingKey := range cfg.RoutingKeyMap {
+		go func(queue, routingKey string) {
+			log.Printf("Starting consumer for queue: %s, routing key: %s", queue, routingKey)
 
-	for msg := range msgs {
-		log.Printf("Received user_signup event: %s", msg.Body)
+			// Start consuming messages from the queue
+			mags, err := ch.Consume(
+				topic, // Queue name
+				"",    // Consumer tag (auto-generated if empty)
+				false, // Auto-ack (set to false for manual ack)
+				false, // Exclusive
+				false, // No-local
+				false, // No-wait
+				nil,   // Arguments
+			)
 
-		// Attempt to broadcast the message to WebSocket clients
-		success := utils.BroadcastMessage("user_signup", msg.Body)
+			if err != nil {
+				log.Fatalf("Failed to start consuming messages from queue %s: %v", topic, err)
+			}
+
+			for {
+				select {
+				case msg := <-mags:
+					processMessage(topic, msg, err)
+				case <-ctx.Done():
+					log.Printf("Stopping consumer for queue: %s", topic)
+					return
+				}
+			}
+		}(topic, routingKey)
+	}
+}
+
+// processMessage handles the processing of a single message
+func processMessage(topic string, msg amqp.Delivery, err error) {
+	if len(msg.Body) > 0 {
+		log.Printf("Received message from topic %s: %s", topic, string(msg.Body))
+
+		success := utils.BroadcastMessage(topic, msg.Body)
 
 		if success {
 			// Acknowledge the message if it was successfully sent
@@ -32,7 +57,6 @@ func ConsumeUserRegistered(ch *amqp.Channel, ctx context.Context) {
 				log.Printf("Failed to acknowledge message: %v", err)
 			}
 		} else {
-
 			if err = msg.Nack(false, false); err != nil {
 				log.Printf("Failed to reject message: %v", err)
 			}

@@ -62,17 +62,17 @@ func UnSubscribeFromEvent(conn *websocket.Conn, eventType string) {
 	}
 }
 
-func BroadcastMessage(eventType string, message []byte) bool {
+func BroadcastMessage(topic string, message []byte) bool {
 	mu.Lock()
 	defer mu.Unlock()
 
-	log.Printf("Broadcasting message to clients subscribed to event: %s", eventType)
+	log.Printf("Broadcasting message to clients subscribed to event: %s", topic)
 	log.Printf("Current clients: %+v", clients)
 
 	success := false
 
 	for client, subscription := range clients {
-		if _, subscribed := subscription[eventType]; subscribed {
+		if _, subscribed := subscription[topic]; subscribed {
 			if err := client.WriteMessage(websocket.TextMessage, message); err != nil {
 				log.Printf("Failed to send message to client: %v", err)
 				UnRegisterClient(client)

@@ -29,7 +29,10 @@ func LoadConfig() *Config {
 			Password:    getEnv("RABBITMQ_PASSWORD", "guest"),
 			Exchange:    getEnv("RABBITMQ_EXCHANGE", "event_exchange"),
 			DLXExchange: getEnv("RABBITMQ_DLX_EXCHANGE", "dlx_event_exchange"),
-			RoutingKeyMap: map[string]string{ //todo: refactor this code
+
+			//todo: refactor this code (i consider the queue name to be the same as the routingKey name)... not good
+			//todo: refactor this code get map from yaml file (best for devops....)
+			RoutingKeyMap: map[string]string{
 				"user_signup":   "user.registered",
 				"order_created": "order.created",
 			},
