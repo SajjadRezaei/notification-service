@@ -8,6 +8,7 @@ type RabbitMQConfig struct {
 	Username      string
 	Password      string
 	Exchange      string
+	DLXExchange   string
 	RoutingKeyMap map[string]string
 }
 
@@ -22,11 +23,12 @@ type Config struct {
 func LoadConfig() *Config {
 	return &Config{
 		RabbitMQ: RabbitMQConfig{
-			Host:     getEnv("RABBITMQ_HOST", "localhost"),
-			Port:     getEnv("RABBITMQ_PORT", "5672"),
-			Username: getEnv("RABBITMQ_USERNAME", "guest"),
-			Password: getEnv("RABBITMQ_PASSWORD", "guest"),
-			Exchange: getEnv("RABBITMQ_EXCHANGE", "event_exchange"),
+			Host:        getEnv("RABBITMQ_HOST", "localhost"),
+			Port:        getEnv("RABBITMQ_PORT", "5672"),
+			Username:    getEnv("RABBITMQ_USERNAME", "guest"),
+			Password:    getEnv("RABBITMQ_PASSWORD", "guest"),
+			Exchange:    getEnv("RABBITMQ_EXCHANGE", "event_exchange"),
+			DLXExchange: getEnv("RABBITMQ_DLX_EXCHANGE", "dlx_event_exchange"),
 			RoutingKeyMap: map[string]string{ //todo: refactor this code
 				"user_signup":   "user.registered",
 				"order_created": "order.created",

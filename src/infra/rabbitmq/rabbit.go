@@ -52,6 +52,21 @@ func SetupRabbitMq(cfg *config.RabbitMQConfig) (*amqp.Connection, *amqp.Channel,
 		return nil, nil, fmt.Errorf("failed to declare exchange: %w", err)
 	}
 
+	// for handle not processable message (when server get message and send to rabbit but client not ready for process)
+	err = ch.ExchangeDeclare(
+		cfg.DLXExchange,
+		"direct",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to declare del_exchange: %w", err)
+	}
+
 	err = bindQueuesToExchange(cfg, err, ch)
 
 	if err != nil {
@@ -89,10 +104,38 @@ func bindQueuesToExchange(cfg *config.RabbitMQConfig, err error, ch *amqp.Channe
 			return err
 		}
 
+		args := amqp.Table{
+			"x-dead-letter-exchange":    cfg.DLXExchange,     // Dead Letter Exchange
+			"x-dead-letter-routing-key": routingKey + "_dlq", // Routing key for the DLQ
+			"x-message-ttl":             10000,               // Optional: Time-to-live for retries (in milliseconds)
+		}
+
+		_, err = ch.QueueDeclare(
+			queue+"_dlq",
+			true,
+			false,
+			false,
+			false,
+			args,
+		)
+
+		if err != nil {
+			fmt.Errorf("failed to declare  dlq queue: %w", err)
+			return err
+		}
+
 		err = ch.QueueBind(
 			queue,
 			routingKey,
 			cfg.Exchange,
+			false,
+			nil,
+		)
+
+		err = ch.QueueBind(
+			queue+"_dlq",
+			routingKey+"_dlq",
+			cfg.DLXExchange,
 			false,
 			nil,
 		)

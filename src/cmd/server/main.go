@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"notification-service/src/consumers"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,6 +12,7 @@ import (
 	"github.com/streadway/amqp"
 
 	"notification-service/src/config"
+	"notification-service/src/consumers"
 	"notification-service/src/handlers"
 	"notification-service/src/infra/rabbitmq"
 )
@@ -31,7 +31,7 @@ func main() {
 	defer ch.Close()
 
 	// monitor channel closure and recreate if necessary
-	ch = reopenChanelIfNecessary(ch, conn)
+	reopenChanelIfNecessary(ch, conn)
 
 	// init server
 	initServer(cfg, ch, ctx)
@@ -75,8 +75,7 @@ func initServer(cfg *config.Config, ch *amqp.Channel, ctx context.Context) {
 	}()
 }
 
-func reopenChanelIfNecessary(ch *amqp.Channel, conn *amqp.Connection) *amqp.Channel {
-
+func reopenChanelIfNecessary(ch *amqp.Channel, conn *amqp.Connection) {
 	go func() {
 		errChan := ch.NotifyClose(make(chan *amqp.Error))
 		for err := range errChan {
@@ -88,6 +87,4 @@ func reopenChanelIfNecessary(ch *amqp.Channel, conn *amqp.Connection) *amqp.Chan
 			ch = newCh
 		}
 	}()
-
-	return ch
 }
