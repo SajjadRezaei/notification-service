@@ -62,7 +62,7 @@ func initServer(cfg *config.Config, rmq *rabbitmq.RabbitMQ, ctx context.Context)
 	})
 
 	// for web socket
-	http.HandleFunc("/ws", handlers.WSHandler)
+	go http.HandleFunc("/ws", handlers.WSHandler)
 
 	server := &http.Server{Addr: fmt.Sprintf(":%s", cfg.Server.Port)}
 
