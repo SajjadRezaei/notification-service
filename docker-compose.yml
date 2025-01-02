@@ -15,9 +15,9 @@ services:
       context: .
     container_name: notification-service
     ports:
-      - "8080:8080" # Expose the notification service on port 8080
+      - "8080:8080"
     depends_on:
-      - rabbitmq # Ensure RabbitMQ starts before the notification service
+      - rabbitmq
     environment:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
