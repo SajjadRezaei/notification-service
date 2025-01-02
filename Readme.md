@@ -37,7 +37,7 @@
 
 ### 1. Produce an Event
 
-This endpoint allows you to produce an event and send it to RabbitMQ.
+This endpoint allows you to produce an event and send to RabbitMQ.
 
 - **Endpoint**: `POST /event`
 - **Request Body**:
@@ -66,6 +66,20 @@ This endpoint allows you to produce an event and send it to RabbitMQ.
     - `200 OK event published` if the event is successfully sent to RabbitMQ.
     - `400 Bad Request` if the request body is invalid.
 
+  ```bash
+  curl -X POST http://localhost:8080/event \
+  -H "Content-Type: application/json" \
+  -d '{
+      "event_type": "order_created",
+      "payload": {
+          "name": "sajjad",
+          "family": "rezaei"
+      }
+  }'
+  ```
+- **Response**:
+    - `200 OK event published` if the event is successfully sent to RabbitMQ.
+    - `400 Bad Request` if the request body is invalid.
 ---
 
 ### 1. RabbitMq panel `http://localhost:15672`
