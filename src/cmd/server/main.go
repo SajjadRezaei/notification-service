@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 
 	"notification-service/src/config"
 	"notification-service/src/handlers"
@@ -22,21 +22,21 @@ func main() {
 	cfg := config.LoadConfig()
 	ctx, cancel := context.WithCancel(context.Background())
 
-	conn, ch, err := rabbitmq.SetupRabbitMq(&cfg.RabbitMQ)
+	rmq, err := rabbitmq.SetupRabbitMq(&cfg.RabbitMQ)
 	if err != nil {
 		log.Fatalf("failed to setup rabbitmq: %s", err)
 	}
 
-	defer conn.Close()
-	defer ch.Close()
+	defer rmq.Conn.Close()
+	defer rmq.Ch.Close()
 
-	reopenChanelIfNecessary(ch, conn)
+	reopenChanelIfNecessary(rmq)
 
 	// init server
-	initServer(cfg, ch, ctx)
+	initServer(cfg, rmq, ctx)
 
 	//start
-	rabbit.ConsumeMessage(&cfg.RabbitMQ, ch, ctx)
+	rabbit.ConsumeMessage(&cfg.RabbitMQ, rmq, ctx)
 
 	waitForShutdownSignal(cancel, ctx)
 }
@@ -55,10 +55,10 @@ func waitForShutdownSignal(cancel context.CancelFunc, ctx context.Context) {
 }
 
 // initServer initialize http server for get event and handle socket web server
-func initServer(cfg *config.Config, ch *amqp.Channel, ctx context.Context) {
+func initServer(cfg *config.Config, rmq *rabbitmq.RabbitMQ, ctx context.Context) {
 	//for simulate notify event for example (user_signup, order_created,and ....)
 	http.HandleFunc("/event", func(w http.ResponseWriter, r *http.Request) {
-		handlers.EventHandler(cfg, w, r, ch)
+		handlers.EventHandler(cfg, w, r, rmq)
 	})
 
 	// for web socket
@@ -76,16 +76,16 @@ func initServer(cfg *config.Config, ch *amqp.Channel, ctx context.Context) {
 }
 
 // reopenChanelIfNecessary monitor channel closure and recreate if necessary
-func reopenChanelIfNecessary(ch *amqp.Channel, conn *amqp.Connection) {
+func reopenChanelIfNecessary(rmq *rabbitmq.RabbitMQ) {
 	go func() {
-		errChan := ch.NotifyClose(make(chan *amqp.Error))
+		errChan := rmq.Ch.NotifyClose(make(chan *amqp.Error))
 		for err := range errChan {
 			log.Printf("RabbitMQ channel closed: %v", err)
-			newCh, err := rabbitmq.OpenChannel(conn)
+			newCh, err := rabbitmq.OpenChannel(rmq.Conn)
 			if err != nil {
 				log.Fatalf("Failed to recreate RabbitMQ channel: %v", err)
 			}
-			ch = newCh
+			rmq.Ch = newCh
 		}
 	}()
 }

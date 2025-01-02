@@ -3,21 +3,22 @@ package rabbit
 import (
 	"context"
 	"log"
+	"notification-service/src/infra/rabbitmq"
 
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 
 	"notification-service/src/config"
 	"notification-service/src/pkg/socket"
 )
 
 // ConsumeMessage dynamically consumes messages for all queues in the special goroutine
-func ConsumeMessage(cfg *config.RabbitMQConfig, ch *amqp.Channel, ctx context.Context) {
+func ConsumeMessage(cfg *config.RabbitMQConfig, rmq *rabbitmq.RabbitMQ, ctx context.Context) {
 	for _, queueName := range cfg.ServiceToQueue {
 		go func(queue string) {
 			log.Printf("Starting consumer for queue: %s", queue)
 
 			// Start consuming messages from the queue
-			mags, err := ch.Consume(
+			mags, err := rmq.Ch.Consume(
 				queue,
 				"", // consumer tag (auto-generated if empty)
 				false,

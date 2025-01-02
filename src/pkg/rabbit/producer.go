@@ -1,13 +1,15 @@
 package rabbit
 
 import (
-	"github.com/streadway/amqp"
 	"log"
+	"notification-service/src/infra/rabbitmq"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func ProduceMessage(ch *amqp.Channel, exchange string, routingKey string, body []byte) error {
+func ProduceMessage(rmq *rabbitmq.RabbitMQ, exchange string, routingKey string, body []byte) error {
 
-	err := ch.Publish(
+	err := rmq.Ch.Publish(
 		exchange,
 		routingKey,
 		false,

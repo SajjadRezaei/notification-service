@@ -5,13 +5,18 @@ import (
 	"log"
 	"time"
 
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 
 	"notification-service/src/config"
 )
 
+type RabbitMQ struct {
+	Conn *amqp.Connection
+	Ch   *amqp.Channel
+}
+
 // SetupRabbitMq setup rabbitMq
-func SetupRabbitMq(cfg *config.RabbitMQConfig) (*amqp.Connection, *amqp.Channel, error) {
+func SetupRabbitMq(cfg *config.RabbitMQConfig) (*RabbitMQ, error) {
 
 	url := fmt.Sprintf("amqp://%s:%s@%s:%s/", cfg.Username, cfg.Password, cfg.Host, cfg.Port)
 	fmt.Println(url)
@@ -29,13 +34,13 @@ func SetupRabbitMq(cfg *config.RabbitMQConfig) (*amqp.Connection, *amqp.Channel,
 	}
 
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to connect to RabbitMQ after retries: %w", err)
+		return nil, fmt.Errorf("failed to connect to RabbitMQ after retries: %w", err)
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
 		conn.Close()
-		return nil, nil, fmt.Errorf("failed to open channel: %w", err)
+		return nil, fmt.Errorf("failed to open channel: %w", err)
 	}
 
 	// Declare a topic exchange
@@ -50,7 +55,7 @@ func SetupRabbitMq(cfg *config.RabbitMQConfig) (*amqp.Connection, *amqp.Channel,
 	)
 
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to declare exchange: %w", err)
+		return nil, fmt.Errorf("failed to declare exchange: %w", err)
 	}
 
 	// for handle not processable message (when server get message and send to socket but client not ready for process)
@@ -65,16 +70,19 @@ func SetupRabbitMq(cfg *config.RabbitMQConfig) (*amqp.Connection, *amqp.Channel,
 	)
 
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to declare del_exchange: %w", err)
+		return nil, fmt.Errorf("failed to declare del_exchange: %w", err)
 	}
 
 	err = bindQueuesToExchange(cfg, ch)
 
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return conn, ch, nil
+	return &RabbitMQ{
+		Conn: conn,
+		Ch:   ch,
+	}, nil
 }
 
 // OpenChannel check chanel is close try to open chanel

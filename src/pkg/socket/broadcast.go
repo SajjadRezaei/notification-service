@@ -1,6 +1,8 @@
 package socket
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"sync"
 
@@ -72,13 +74,22 @@ func BroadcastMessage(topic string, message []byte) bool {
 	defer mu.Unlock()
 
 	log.Printf("Broadcasting message to clients subscribed to event: %s", topic)
-	log.Printf("Current clients: %+v", clients)
+
+	var clientMessage struct {
+		EventType string          `json:"event_type"`
+		Payload   json.RawMessage `json:"payload"`
+	}
+	err := json.Unmarshal(message, &clientMessage)
+	if err != nil {
+		fmt.Errorf("cnnot decode message: %w", err)
+		return false
+	}
 
 	success := false
 
 	for client, subscription := range clients {
-		if _, subscribed := subscription[topic]; subscribed {
-			if err := client.WriteMessage(websocket.TextMessage, message); err != nil {
+		if _, subscribed := subscription[clientMessage.EventType]; subscribed {
+			if err := client.WriteMessage(websocket.TextMessage, clientMessage.Payload); err != nil {
 				log.Printf("Failed to send message to client: %v", err)
 				UnRegisterClient(client)
 			} else {
