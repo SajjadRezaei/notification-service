@@ -10,6 +10,7 @@ import (
 	"github.com/streadway/amqp"
 )
 
+// EventHandler give user request and send message to rabbit
 func EventHandler(cfg *config.Config, w http.ResponseWriter, r *http.Request, ch *amqp.Channel) {
 	var req struct {
 		EventType string          `json:"event_type"`
@@ -21,8 +22,8 @@ func EventHandler(cfg *config.Config, w http.ResponseWriter, r *http.Request, ch
 		return
 	}
 
-	routingKey := cfg.RabbitMQ.EventToRoutingKey[req.EventType]
-	if req.EventType == "" {
+	routingKey, exist := cfg.RabbitMQ.EventToRoutingKey[req.EventType]
+	if req.EventType == "" || !exist {
 		http.Error(w, "EventType is invalid", http.StatusBadRequest)
 		return
 	}

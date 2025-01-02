@@ -20,6 +20,7 @@ type SubscribeRequest struct {
 	Action    string `json:"action"`
 }
 
+// WSHandler handle socket client request
 func WSHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

@@ -23,5 +23,4 @@ func ProduceMessage(ch *amqp.Channel, exchange string, routingKey string, body [
 	}
 
 	return err
-
 }

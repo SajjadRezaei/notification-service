@@ -23,6 +23,7 @@ type Config struct {
 	Server   ServerConfig
 }
 
+// LoadConfig get project config
 func LoadConfig() *Config {
 	return &Config{
 		RabbitMQ: RabbitMQConfig{

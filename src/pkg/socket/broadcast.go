@@ -17,6 +17,7 @@ type BroadcastRequest struct {
 	Message   []byte `json:"message"`
 }
 
+// RegisterClient register client
 func RegisterClient(conn *websocket.Conn) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -24,6 +25,7 @@ func RegisterClient(conn *websocket.Conn) {
 	log.Println("New WebSocket Client Connected:", conn.RemoteAddr())
 }
 
+// UnRegisterClient un Register Client
 func UnRegisterClient(conn *websocket.Conn) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -32,6 +34,7 @@ func UnRegisterClient(conn *websocket.Conn) {
 	log.Println("WebSocket Client disconnected:")
 }
 
+// SubscribeToEvent subscribe to special topic
 func SubscribeToEvent(conn *websocket.Conn, eventType string) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -44,6 +47,7 @@ func SubscribeToEvent(conn *websocket.Conn, eventType string) {
 	log.Printf("Client subscribed to event: %s", eventType)
 }
 
+// UnSubscribeFromEvent Unsubscribe from special topic
 func UnSubscribeFromEvent(conn *websocket.Conn, eventType string) {
 
 	mu.Lock()
@@ -62,6 +66,7 @@ func UnSubscribeFromEvent(conn *websocket.Conn, eventType string) {
 	}
 }
 
+// BroadcastMessage broadcast message to socket client
 func BroadcastMessage(topic string, message []byte) bool {
 	mu.Lock()
 	defer mu.Unlock()

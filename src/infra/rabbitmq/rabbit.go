@@ -10,6 +10,7 @@ import (
 	"notification-service/src/config"
 )
 
+// SetupRabbitMq setup rabbitMq
 func SetupRabbitMq(cfg *config.RabbitMQConfig) (*amqp.Connection, *amqp.Channel, error) {
 
 	url := fmt.Sprintf("amqp://%s:%s@%s:%s/", cfg.Username, cfg.Password, cfg.Host, cfg.Port)
@@ -76,6 +77,7 @@ func SetupRabbitMq(cfg *config.RabbitMQConfig) (*amqp.Connection, *amqp.Channel,
 	return conn, ch, nil
 }
 
+// OpenChannel check chanel is close try to open chanel
 func OpenChannel(conn *amqp.Connection) (*amqp.Channel, error) {
 	for i := 0; i < 5; i++ {
 		ch, err := conn.Channel()
