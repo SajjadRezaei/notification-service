@@ -14,7 +14,7 @@ import (
 func ConsumeMessage(cfg *config.RabbitMQConfig, ch *amqp.Channel, ctx context.Context) {
 	for _, queueName := range cfg.ServiceToQueue {
 		go func(queue string) {
-			log.Printf("Starting consumer for queue: %s, routing key: %s", queue)
+			log.Printf("Starting consumer for queue: %s", queue)
 
 			// Start consuming messages from the queue
 			mags, err := ch.Consume(
@@ -28,7 +28,7 @@ func ConsumeMessage(cfg *config.RabbitMQConfig, ch *amqp.Channel, ctx context.Co
 			)
 
 			if err != nil {
-				log.Fatalf("Failed to start consuming messages from queue %s: %v", err)
+				log.Fatalf("Failed to start consuming messages from queue %s", err)
 			}
 
 			for {
