@@ -107,9 +107,18 @@ func bindQueuesToExchange(cfg *config.RabbitMQConfig, ch *amqp.Channel) error {
 			"x-dead-letter-exchange": cfg.DLXExchange,
 		}
 
-		err := handelDeadLetterQueue(cfg, ch, queue)
+		dlQueue := fmt.Sprintf("%s_dlq", queue)
+		_, err := ch.QueueDeclare(
+			dlQueue,
+			true,
+			false,
+			false,
+			false,
+			nil,
+		)
+
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to declare  dlq queue: %w", err)
 		}
 
 		// main queue per service
@@ -138,13 +147,25 @@ func bindQueuesToExchange(cfg *config.RabbitMQConfig, ch *amqp.Channel) error {
 			if err != nil {
 				return fmt.Errorf("failed to bind main queue: %w", err)
 			}
+
+			err = ch.QueueBind(
+				dlQueue,
+				routingKey,
+				cfg.DLXExchange,
+				false,
+				nil,
+			)
+
+			if err != nil {
+				return fmt.Errorf("failed to bind queue to dead letter queue %w", err)
+			}
 		}
 	}
 
 	return nil
 }
 
-func handelDeadLetterQueue(cfg *config.RabbitMQConfig, ch *amqp.Channel, queue string) error {
+func handelDeadLetterQueue(ch *amqp.Channel, queue string) error {
 	dlQueue := fmt.Sprintf("%s_dlq", queue)
 	_, err := ch.QueueDeclare(
 		dlQueue,
@@ -157,18 +178,6 @@ func handelDeadLetterQueue(cfg *config.RabbitMQConfig, ch *amqp.Channel, queue s
 
 	if err != nil {
 		return fmt.Errorf("failed to declare  dlq queue: %w", err)
-	}
-
-	err = ch.QueueBind(
-		dlQueue,
-		queue,
-		cfg.DLXExchange,
-		false,
-		nil,
-	)
-
-	if err != nil {
-		return fmt.Errorf("failed to bind queue to dead letter queue %w", err)
 	}
 
 	return nil

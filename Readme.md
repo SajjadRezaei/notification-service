@@ -2,6 +2,7 @@
 
 ### Features
 
+- Produce simple event use http request.
 - Consume events from RabbitMQ.
 - Broadcast events to WebSocket clients.
 - WebSocket clients can subscribe to specific event types or unsubscribe from specific event.
@@ -16,11 +17,11 @@
 
 ### Run the Service
 
-1. Build and run the Docker image:
+1. Build and run the Docker images:
    ```bash
    make build
    ```
-2. Run the Docker image:
+2. Run the Docker images:
    ```bash
    make up
    ``` 
@@ -68,6 +69,7 @@ This endpoint allows you to produce an event and send it to RabbitMQ.
 ---
 
 ### 1. RabbitMq panel `http://localhost:15672`
+
 ```
 Username: guest
 Password: guest
@@ -236,6 +238,7 @@ setTimeout(() => {
 ---
 
 ## Notes
+
 - Ensure RabbitMQ is running on docker and exposed port 5672  `localhost:5672`. Update the connection string in the code
   if needed.
 - The service is designed to handle multiple WebSocket connections efficiently using Goroutines.
