@@ -100,3 +100,12 @@ func BroadcastMessage(topic string, message []byte) bool {
 
 	return success
 }
+
+func DirectMessageToClient(client *websocket.Conn, message []byte) bool {
+	if err := client.WriteMessage(websocket.TextMessage, message); err != nil {
+		log.Printf("Failed to send message to client: %v", err)
+		return false
+	}
+
+	return true
+}

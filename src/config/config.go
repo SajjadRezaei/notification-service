@@ -39,17 +39,15 @@ func LoadConfig() *Config {
 				"order": "order_notification",
 				"user":  "user_notification",
 			},
-			//todo: refactor this code get map from yaml file and check recreate if need (best solution ....)
 			QueueToRoutingKeys: map[string][]string{
 				"user_notification":  {"user.registered"}, // and other event .... user.change_password
 				"order_notification": {"order.created"},
 			},
-			//todo: refactor this code get map from yaml file and check recreate if need (best solution ....)
 			EventToRoutingKey: map[string]string{
 				"order_created": "order.created",
 				"user_signup":   "user.registered",
 			},
-			//
+			/////////////////////////////////////
 
 		},
 		Server: ServerConfig{

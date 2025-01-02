@@ -16,7 +16,7 @@ var upgrader = websocket.Upgrader{
 }
 
 type SubscribeRequest struct {
-	EventType string `json:"event_type"`
+	EventType string `json:"event_type,omitempty"`
 	Action    string `json:"action"`
 }
 
@@ -44,6 +44,8 @@ func WSHandler(w http.ResponseWriter, r *http.Request) {
 			socket.SubscribeToEvent(conn, req.EventType)
 		case "unsubscribe":
 			socket.UnSubscribeFromEvent(conn, req.EventType)
+		case "ping":
+			socket.DirectMessageToClient(conn, []byte("pong!"))
 		default:
 			log.Printf("Invalid action: %s\n", req.Action)
 			err = conn.WriteMessage(websocket.TextMessage, []byte("Invalid action: must be 'subscribe' or 'unsubscribe'"))
