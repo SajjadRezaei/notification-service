@@ -67,6 +67,12 @@ This endpoint allows you to produce an event and send it to RabbitMQ.
 
 ---
 
+### 1. RabbitMq panel `http://localhost:15672`
+```
+Username: guest
+Password: guest
+```
+
 ## WebSocket Client
 
 ### 1. Connect to WebSocket
@@ -230,7 +236,6 @@ setTimeout(() => {
 ---
 
 ## Notes
-
 - Ensure RabbitMQ is running on docker and exposed port 5672  `localhost:5672`. Update the connection string in the code
   if needed.
 - The service is designed to handle multiple WebSocket connections efficiently using Goroutines.
