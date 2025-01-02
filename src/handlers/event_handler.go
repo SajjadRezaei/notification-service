@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"notification-service/src/infra/rabbitmq"
 
 	"notification-service/src/config"
+	"notification-service/src/infra/rabbitmq"
 	"notification-service/src/services"
 )
 

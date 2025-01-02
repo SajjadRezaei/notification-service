@@ -3,11 +3,11 @@ package rabbit
 import (
 	"context"
 	"log"
-	"notification-service/src/infra/rabbitmq"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 
 	"notification-service/src/config"
+	"notification-service/src/infra/rabbitmq"
 	"notification-service/src/pkg/socket"
 )
 

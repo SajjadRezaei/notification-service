@@ -2,6 +2,7 @@ package rabbit
 
 import (
 	"log"
+
 	"notification-service/src/infra/rabbitmq"
 
 	amqp "github.com/rabbitmq/amqp091-go"

@@ -12,8 +12,6 @@ COPY . ./
 RUN go build -v -o server ./src/cmd/server/main.go
 
 
-
-
 FROM debian:bookworm
 
 COPY --from=builder /app/server /app/server

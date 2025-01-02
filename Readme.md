@@ -16,15 +16,19 @@
 
 ### Run the Service
 
-1. Build the Docker image:
+1. Build and run the Docker image:
+   ```bash
+   make build
+   ```
+2. Run the Docker image:
    ```bash
    make up
-   ```
-2. Run the service:
+   ``` 
+3. Stop the service:
    ```bash
    make down
    ```
-3. Connect WebSocket clients to `ws://localhost:8080/ws`.
+4. Connect WebSocket clients to `ws://localhost:8080/ws`.
 
 ---
 
