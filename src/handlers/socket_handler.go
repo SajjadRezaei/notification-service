@@ -68,20 +68,12 @@ func handleClientAction(conn *websocket.Conn, req SubscribeRequest) error {
 		socket.UnSubscribeFromEvent(conn, req.EventType)
 		log.Printf("Client unsubscribed from event: %s", req.EventType)
 	case "ping":
-		directMessageToClient(conn, []byte("pong!"))
+		_ = socket.SendMessageToClient(conn, []byte("pong!"))
 		return nil
 	default:
 		log.Printf("Invalid action received: %s", req.Action)
-		directMessageToClient(conn, []byte("Invalid action: must be 'subscribe', 'unsubscribe', or 'ping      x"))
+		_ = socket.SendMessageToClient(conn, []byte("Invalid action: must be 'subscribe', 'unsubscribe', or 'ping      x"))
 
 	}
 	return nil
-}
-
-// directMessageToClient sends a "pong" response to the client for a "ping" action
-func directMessageToClient(conn *websocket.Conn, message []byte) {
-	err := socket.DirectMessageToClient(conn, message)
-	if !err {
-		log.Printf("Failed to send pong response: %v", err)
-	}
 }

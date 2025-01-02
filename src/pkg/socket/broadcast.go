@@ -11,32 +11,35 @@ import (
 
 var (
 	clients = make(map[*websocket.Conn]map[string]bool)
-	mu      = new(sync.Mutex)
+	mu      sync.Mutex
 )
 
+// BroadcastRequest represents the structure of a broadcast message
 type BroadcastRequest struct {
 	EventType string `json:"event_type"`
 	Message   []byte `json:"message"`
 }
 
-// RegisterClient register client
+// RegisterClient registers a new WebSocket client
 func RegisterClient(conn *websocket.Conn) {
 	mu.Lock()
 	defer mu.Unlock()
+
 	clients[conn] = make(map[string]bool)
-	log.Println("New WebSocket Client Connected:", conn.RemoteAddr())
+	log.Printf("New WebSocket client connected: %s", conn.RemoteAddr())
 }
 
-// UnRegisterClient un Register Client
+// UnRegisterClient unregisters a WebSocket client and closes its connection
 func UnRegisterClient(conn *websocket.Conn) {
 	mu.Lock()
 	defer mu.Unlock()
+
 	delete(clients, conn)
 	conn.Close()
-	log.Println("WebSocket Client disconnected:")
+	log.Printf("WebSocket client disconnected: %s", conn.RemoteAddr())
 }
 
-// SubscribeToEvent subscribe to special topic
+// SubscribeToEvent subscribes a client to a specific event type
 func SubscribeToEvent(conn *websocket.Conn, eventType string) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -44,23 +47,19 @@ func SubscribeToEvent(conn *websocket.Conn, eventType string) {
 	if _, exists := clients[conn]; !exists {
 		clients[conn] = make(map[string]bool)
 	}
-	// Add the subscription
+
 	clients[conn][eventType] = true
 	log.Printf("Client subscribed to event: %s", eventType)
 }
 
-// UnSubscribeFromEvent Unsubscribe from special topic
+// UnSubscribeFromEvent unsubscribes a client from a specific event type
 func UnSubscribeFromEvent(conn *websocket.Conn, eventType string) {
-
 	mu.Lock()
 	defer mu.Unlock()
 
-	// Check if the client exists
 	if subscriptions, exists := clients[conn]; exists {
-		// Remove the specific subscription
 		delete(subscriptions, eventType)
 
-		// If the client has no more subscriptions, remove the client
 		if len(subscriptions) == 0 {
 			delete(clients, conn)
 		}
@@ -68,7 +67,7 @@ func UnSubscribeFromEvent(conn *websocket.Conn, eventType string) {
 	}
 }
 
-// BroadcastMessage broadcast message to socket client
+// BroadcastMessage sends a message to all clients subscribed to a specific event type
 func BroadcastMessage(topic string, message []byte) bool {
 	mu.Lock()
 	defer mu.Unlock()
@@ -79,17 +78,17 @@ func BroadcastMessage(topic string, message []byte) bool {
 		EventType string          `json:"event_type"`
 		Payload   json.RawMessage `json:"payload"`
 	}
-	err := json.Unmarshal(message, &clientMessage)
-	if err != nil {
-		fmt.Errorf("cnnot decode message: %w", err)
+
+	if err := json.Unmarshal(message, &clientMessage); err != nil {
+		log.Printf("Failed to decode message: %v", err)
 		return false
 	}
 
 	success := false
 
-	for client, subscription := range clients {
-		if _, subscribed := subscription[clientMessage.EventType]; subscribed {
-			if err := client.WriteMessage(websocket.TextMessage, clientMessage.Payload); err != nil {
+	for client, subscriptions := range clients {
+		if _, subscribed := subscriptions[clientMessage.EventType]; subscribed {
+			if err := SendMessageToClient(client, clientMessage.Payload); err != nil {
 				log.Printf("Failed to send message to client: %v", err)
 				UnRegisterClient(client)
 			} else {
@@ -101,11 +100,11 @@ func BroadcastMessage(topic string, message []byte) bool {
 	return success
 }
 
-func DirectMessageToClient(client *websocket.Conn, message []byte) bool {
-	if err := client.WriteMessage(websocket.TextMessage, message); err != nil {
-		log.Printf("Failed to send message to client: %v", err)
-		return false
+// SendMessageToClient sends a direct message to a specific client
+func SendMessageToClient(client *websocket.Conn, message []byte) error {
+	err := client.WriteMessage(websocket.TextMessage, message)
+	if err != nil {
+		return fmt.Errorf("failed to write message: %w", err)
 	}
-
-	return true
+	return nil
 }
