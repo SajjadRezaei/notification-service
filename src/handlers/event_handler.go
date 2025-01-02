@@ -21,12 +21,13 @@ func EventHandler(cfg *config.Config, w http.ResponseWriter, r *http.Request, ch
 		return
 	}
 
+	routingKey := cfg.RabbitMQ.EventToRoutingKey[req.EventType]
 	if req.EventType == "" {
-		http.Error(w, "EventType is required", http.StatusBadRequest)
+		http.Error(w, "EventType is invalid", http.StatusBadRequest)
 		return
 	}
 
-	if err := services.PublishEvent(ch, cfg.RabbitMQ.Exchange, cfg.RabbitMQ.RoutingKeyMap[req.EventType], req.Payload); err != nil {
+	if err := services.PublishEvent(ch, cfg.RabbitMQ.Exchange, routingKey, req.Payload); err != nil {
 		http.Error(w, "Failed to publish event", http.StatusInternalServerError)
 		return
 	}

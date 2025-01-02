@@ -52,7 +52,7 @@ func SetupRabbitMq(cfg *config.RabbitMQConfig) (*amqp.Connection, *amqp.Channel,
 		return nil, nil, fmt.Errorf("failed to declare exchange: %w", err)
 	}
 
-	// for handle not processable message (when server get message and send to rabbit but client not ready for process)
+	// for handle not processable message (when server get message and send to socket but client not ready for process)
 	err = ch.ExchangeDeclare(
 		cfg.DLXExchange,
 		"direct",
@@ -67,7 +67,7 @@ func SetupRabbitMq(cfg *config.RabbitMQConfig) (*amqp.Connection, *amqp.Channel,
 		return nil, nil, fmt.Errorf("failed to declare del_exchange: %w", err)
 	}
 
-	err = bindQueuesToExchange(cfg, err, ch)
+	err = bindQueuesToExchange(cfg, ch)
 
 	if err != nil {
 		return nil, nil, err
@@ -88,14 +88,21 @@ func OpenChannel(conn *amqp.Connection) (*amqp.Channel, error) {
 	return nil, fmt.Errorf("failed to open channel after retries")
 }
 
-func bindQueuesToExchange(cfg *config.RabbitMQConfig, err error, ch *amqp.Channel) error {
-	for queue, routingKey := range cfg.RoutingKeyMap {
+func bindQueuesToExchange(cfg *config.RabbitMQConfig, ch *amqp.Channel) error {
+	for _, queue := range cfg.ServiceToQueue {
+
+		routingKeys := cfg.QueueToRoutingKeys[queue]
 
 		args := amqp.Table{
-			"x-dead-letter-exchange":    cfg.DLXExchange,     // Dead Letter Exchange
-			"x-dead-letter-routing-key": routingKey + "_dlq", // Routing key for the DLQ
+			"x-dead-letter-exchange": cfg.DLXExchange,
 		}
 
+		err := handelDeadLetterQueue(cfg, ch, queue)
+		if err != nil {
+			return err
+		}
+
+		// main queue per service
 		_, err = ch.QueueDeclare(
 			queue,
 			true,
@@ -106,48 +113,52 @@ func bindQueuesToExchange(cfg *config.RabbitMQConfig, err error, ch *amqp.Channe
 		)
 
 		if err != nil {
-			fmt.Errorf("failed to declare queue: %w", err)
-			return err
+			return fmt.Errorf("failed to declare queue: %w", err)
 		}
 
-		_, err = ch.QueueDeclare(
-			queue+"_dlq",
-			true,
-			false,
-			false,
-			false,
-			nil,
-		)
+		for _, routingKey := range routingKeys {
+			err = ch.QueueBind(
+				queue,
+				routingKey,
+				cfg.Exchange,
+				false,
+				nil,
+			)
 
-		if err != nil {
-			fmt.Errorf("failed to declare  dlq queue: %w", err)
-			return err
+			if err != nil {
+				return fmt.Errorf("failed to bind main queue: %w", err)
+			}
 		}
+	}
 
-		err = ch.QueueBind(
-			queue,
-			routingKey,
-			cfg.Exchange,
-			false,
-			nil,
-		)
+	return nil
+}
 
-		if err != nil {
-			return fmt.Errorf("failed to bind main queue: %w", err)
-		}
+func handelDeadLetterQueue(cfg *config.RabbitMQConfig, ch *amqp.Channel, queue string) error {
+	dlQueue := fmt.Sprintf("%s_dlq", queue)
+	_, err := ch.QueueDeclare(
+		dlQueue,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
 
-		err = ch.QueueBind(
-			queue+"_dlq",
-			routingKey+"_dlq",
-			cfg.DLXExchange,
-			false,
-			nil,
-		)
+	if err != nil {
+		return fmt.Errorf("failed to declare  dlq queue: %w", err)
+	}
 
-		if err != nil {
-			return fmt.Errorf("failed to bind DLQ: %w", err)
-		}
+	err = ch.QueueBind(
+		dlQueue,
+		queue,
+		cfg.DLXExchange,
+		false,
+		nil,
+	)
 
+	if err != nil {
+		return fmt.Errorf("failed to bind queue to dead letter queue %w", err)
 	}
 
 	return nil

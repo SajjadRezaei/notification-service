@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"notification-service/src/utils"
+	"notification-service/src/pkg/socket"
 
 	"github.com/gorilla/websocket"
 )
@@ -27,22 +27,22 @@ func WSHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	utils.RegisterClient(conn)
+	socket.RegisterClient(conn)
 
 	for {
 		var req SubscribeRequest
 		err = conn.ReadJSON(&req)
 		if err != nil {
 			log.Println("Failed to read message from client", err)
-			utils.UnRegisterClient(conn)
+			socket.UnRegisterClient(conn)
 			break
 		}
 
 		switch req.Action {
 		case "subscribe":
-			utils.SubscribeToEvent(conn, req.EventType)
+			socket.SubscribeToEvent(conn, req.EventType)
 		case "unsubscribe":
-			utils.UnSubscribeFromEvent(conn, req.EventType)
+			socket.UnSubscribeFromEvent(conn, req.EventType)
 		default:
 			log.Printf("Invalid action: %s\n", req.Action)
 			err = conn.WriteMessage(websocket.TextMessage, []byte("Invalid action: must be 'subscribe' or 'unsubscribe'"))

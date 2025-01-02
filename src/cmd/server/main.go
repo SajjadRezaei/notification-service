@@ -12,9 +12,9 @@ import (
 	"github.com/streadway/amqp"
 
 	"notification-service/src/config"
-	"notification-service/src/consumers"
 	"notification-service/src/handlers"
 	"notification-service/src/infra/rabbitmq"
+	"notification-service/src/pkg/rabbit"
 )
 
 func main() {
@@ -35,8 +35,8 @@ func main() {
 	// init server
 	initServer(cfg, ch, ctx)
 
-	//Run the consumer in a goroutine
-	consumers.ConsumeMessage(&cfg.RabbitMQ, ch, ctx)
+	//start
+	rabbit.ConsumeMessage(&cfg.RabbitMQ, ch, ctx)
 
 	waitForShutdownSignal(cancel, ctx)
 }

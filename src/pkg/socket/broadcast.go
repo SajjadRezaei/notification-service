@@ -1,4 +1,4 @@
-package utils
+package socket
 
 import (
 	"log"

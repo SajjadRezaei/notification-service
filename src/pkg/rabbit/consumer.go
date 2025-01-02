@@ -1,46 +1,46 @@
-package consumers
+package rabbit
 
 import (
 	"context"
 	"log"
 
-	"notification-service/src/config"
-	"notification-service/src/utils"
-
 	"github.com/streadway/amqp"
+
+	"notification-service/src/config"
+	"notification-service/src/pkg/socket"
 )
 
-// ConsumeMessage dynamically consumes messages for all queues in the RoutingKeyMap
+// ConsumeMessage dynamically consumes messages for all queues in the special goroutine
 func ConsumeMessage(cfg *config.RabbitMQConfig, ch *amqp.Channel, ctx context.Context) {
-	for topic, routingKey := range cfg.RoutingKeyMap {
-		go func(queue, routingKey string) {
-			log.Printf("Starting consumer for queue: %s, routing key: %s", queue, routingKey)
+	for _, queueName := range cfg.ServiceToQueue {
+		go func(queue string) {
+			log.Printf("Starting consumer for queue: %s, routing key: %s", queue)
 
 			// Start consuming messages from the queue
 			mags, err := ch.Consume(
-				topic, // Queue name
-				"",    // Consumer tag (auto-generated if empty)
-				false, // Auto-ack (set to false for manual ack)
-				false, // Exclusive
-				false, // No-local
-				false, // No-wait
-				nil,   // Arguments
+				queue,
+				"", // consumer tag (auto-generated if empty)
+				false,
+				false,
+				false,
+				false,
+				nil,
 			)
 
 			if err != nil {
-				log.Fatalf("Failed to start consuming messages from queue %s: %v", topic, err)
+				log.Fatalf("Failed to start consuming messages from queue %s: %v", err)
 			}
 
 			for {
 				select {
 				case msg := <-mags:
-					processMessage(topic, msg, err)
+					processMessage(queueName, msg, err)
 				case <-ctx.Done():
-					log.Printf("Stopping consumer for queue: %s", topic)
+					log.Printf("Stopping consumer for queue: %s", queueName)
 					return
 				}
 			}
-		}(topic, routingKey)
+		}(queueName)
 	}
 }
 
@@ -49,14 +49,14 @@ func processMessage(topic string, msg amqp.Delivery, err error) {
 	if len(msg.Body) > 0 {
 		log.Printf("Received message from topic %s: %s", topic, string(msg.Body))
 
-		success := utils.BroadcastMessage(topic, msg.Body)
-
+		success := socket.BroadcastMessage(topic, msg.Body)
 		if success {
 			// Acknowledge the message if it was successfully sent
 			if err = msg.Ack(false); err != nil {
 				log.Printf("Failed to acknowledge message: %v", err)
 			}
 		} else {
+			//  prevent requeue and send to  DLQ
 			if err = msg.Nack(false, false); err != nil {
 				log.Printf("Failed to reject message: %v", err)
 			}

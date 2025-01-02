@@ -1,21 +1,15 @@
 package services
 
 import (
-	"github.com/streadway/amqp"
 	"log"
+
+	"github.com/streadway/amqp"
+	"notification-service/src/pkg/rabbit"
 )
 
+// PublishEvent user for produce message
 func PublishEvent(ch *amqp.Channel, exchange string, routingKey string, body []byte) error {
-	err := ch.Publish(
-		exchange,
-		routingKey,
-		false,
-		false,
-		amqp.Publishing{
-			ContentType: "application/json",
-			Body:        body,
-		},
-	)
+	err := rabbit.ProduceMessage(ch, exchange, routingKey, body)
 
 	if err != nil {
 		log.Println("Failed to publish a message:", err)
